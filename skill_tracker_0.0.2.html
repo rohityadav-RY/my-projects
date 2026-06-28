@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CSE Skill Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
+    --text:#e6edf3;--muted:#7d8590;--green:#3fb950;--green2:#238636;
+    --blue:#58a6ff;--purple:#bc8cff;--orange:#f0883e;--red:#f85149;
+    --yellow:#d29922;
+    --profile-glass: rgba(22,27,34,0.92);
+    --profile-border: rgba(48,54,61,0.8);
+  }
+  body.light-theme{
+    --bg:#f4f6f9;--bg2:#ffffff;--bg3:#eaecef;--border:#d0d7de;
+    --text:#1f2328;--muted:#656d76;--green:#1a7f37;--green2:#1f883d;
+    --blue:#0969da;--purple:#8250df;--orange:#bc4c00;--red:#cf222e;
+    --yellow:#9a6700;
+    --profile-glass: rgba(255,255,255,0.92);
+    --profile-border: rgba(208,215,222,0.9);
+  }
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh}
+  .mono{font-family:'JetBrains Mono',monospace}
+
+  /* Header */
+  header{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px}
+  .logo svg{opacity:.9}
+  .header-right{display:flex;align-items:center;gap:16px}
+  .countdown-badge{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--muted)}
+  .countdown-badge span{color:var(--green);font-weight:600;font-family:'JetBrains Mono',monospace}
+
+  /* Layout */
+  .container{max-width:1100px;margin:0 auto;padding:24px 20px}
+  .grid{display:grid;grid-template-columns:260px 1fr;gap:20px}
+
+  /* Sidebar */
+  .sidebar{}
+  .sidebar-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;margin-bottom:16px;overflow:hidden}
+  .sidebar-card-header{padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .stat-row{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border)}
+  .stat-row:last-child{border-bottom:none}
+  .stat-label{color:var(--muted);font-size:13px}
+  .stat-val{font-weight:600;font-size:13px;font-family:'JetBrains Mono',monospace}
+  .streak-fire{color:var(--orange)}
+
+  /* Contribution grid */
+  .contrib-grid{padding:14px 16px}
+  .contrib-label{font-size:11px;color:var(--muted);margin-bottom:8px}
+  .grid-cells{display:flex;flex-wrap:wrap;gap:2px}
+  .cell{width:10px;height:10px;border-radius:2px;background:var(--bg3)}
+  .cell.l1{background:#0e4429}.cell.l2{background:#006d32}.cell.l3{background:#26a641}.cell.l4{background:#39d353}
+
+  /* Main area */
+  .main{}
+  .tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;gap:0}
+  .tab{padding:8px 16px;cursor:pointer;border-bottom:2px solid transparent;font-size:14px;color:var(--muted);transition:.15s;border-radius:6px 6px 0 0}
+  .tab:hover{color:var(--text);background:var(--bg3)}
+  .tab.active{color:var(--text);border-bottom-color:var(--orange)}
+  .tab-count{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:0 7px;font-size:11px;margin-left:6px;color:var(--muted)}
+
+  /* Add skill bar */
+  .add-bar{display:flex;gap:8px;margin-bottom:16px}
+  input,select{background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 12px;font-size:13px;outline:none;font-family:inherit}
+  input::placeholder{color:var(--muted)}
+  input:focus,select:focus{border-color:var(--blue)}
+  select option{background:var(--bg2)}
+  .btn{border:none;border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500;transition:.15s}
+  .btn-primary{background:var(--green2);color:#fff;border:1px solid #238636}
+  .btn-primary:hover{background:#2ea043}
+  .btn-sm{padding:4px 10px;font-size:12px}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+  .btn-ghost:hover{background:var(--bg3);color:var(--text)}
+  .btn-danger{background:transparent;color:var(--red);border:1px solid var(--border)}
+  .btn-danger:hover{background:#21262d}
+
+  /* Skill cards */
+  .skill-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;margin-bottom:12px;overflow:hidden;transition:.2s}
+  .skill-card:hover{border-color:#484f58}
+  .skill-header{display:flex;align-items:center;padding:14px 16px;gap:12px;cursor:pointer}
+  .skill-icon{font-size:10px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--blue);letter-spacing:.5px}
+  .day-skill-icon{font-size:10px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--bg3);border:1px solid var(--border);border-radius:5px;font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--blue)}
+  .skill-meta{flex:1}
+  .skill-name{font-weight:600;font-size:14px;margin-bottom:2px}
+  .skill-sublabel{font-size:11px;color:var(--muted)}
+  .level-badge{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;margin-right:4px}
+  .xp-label{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  .chevron{color:var(--muted);font-size:12px;transition:.2s}
+  .chevron.open{transform:rotate(90deg)}
+
+  /* Progress bar */
+  .progress-wrap{padding:0 16px 12px}
+  .progress-bg{background:var(--bg3);border-radius:4px;height:6px;overflow:hidden}
+  .progress-fill{height:100%;border-radius:4px;transition:.5s}
+  .progress-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono',monospace}
+
+  /* Expanded panel */
+  .skill-body{border-top:1px solid var(--border);display:none}
+  .skill-body.open{display:block}
+  .log-area{padding:14px 16px}
+  .log-form{display:flex;gap:8px;margin-bottom:14px}
+  .log-form input{flex:1}
+  .log-entries{max-height:180px;overflow-y:auto}
+  .log-entry{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)}
+  .log-entry:last-child{border-bottom:none}
+  .log-entry-text{font-size:13px}
+  .log-entry-meta{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap;margin-left:12px}
+  .log-empty{color:var(--muted);font-size:12px;font-style:italic;padding:8px 0}
+  .xp-toast{position:fixed;bottom:24px;right:24px;background:var(--green2);color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.3s;z-index:999;border:1px solid #3fb950}
+  .xp-toast.show{opacity:1}
+  .lvlup-toast{background:#1f1235;border-color:var(--purple);color:var(--purple)}
+
+  /* Category tag */
+  .tag{font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid;font-weight:500}
+  .tag-pre{border-color:#d29922;color:#d29922;background:#272115}
+  .tag-core{border-color:#58a6ff;color:#58a6ff;background:#121d2f}
+  .tag-personal{border-color:#bc8cff;color:#bc8cff;background:#1e1535}
+
+  /* Page two: log */
+  .log-page{display:none}
+  .log-page.active{display:block}
+  .skills-page{display:none}
+  .skills-page.active{display:block}
+
+  .day-group{margin-bottom:20px}
+  .day-group-header{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+  .day-entry-row{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;margin-bottom:6px}
+  .day-skill-icon{font-size:16px}
+  .day-entry-info{flex:1}
+  .day-entry-title{font-size:13px;font-weight:500}
+  .day-entry-sub{font-size:11px;color:var(--muted);margin-top:2px}
+  .day-xp{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--green)}
+
+  /* Empty */
+  .empty-state{text-align:center;padding:48px 24px;color:var(--muted)}
+  .empty-state h3{font-size:16px;color:var(--text);margin-bottom:8px}
+  .empty-state p{font-size:13px;line-height:1.6}
+
+  /* Max level */
+  .maxed{border-color:#bc8cff}
+  .maxed .progress-fill{background:linear-gradient(90deg,#bc8cff,#58a6ff)}
+
+  /* ── Onboarding Modal ──────────────────────────────────────────────────── */
+  .onboard-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:2000;display:flex;align-items:center;justify-content:center}
+  .onboard-overlay.hidden{display:none}
+  .onboard-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:36px 32px;width:360px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.5)}
+  .onboard-title{font-size:20px;font-weight:700;margin-bottom:6px;color:var(--text)}
+  .onboard-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6}
+  .avatar-picker{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:20px}
+  .avatar-opt{font-size:26px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:2px solid var(--border);cursor:pointer;transition:.15s;background:var(--bg3)}
+  .avatar-opt:hover,.avatar-opt.sel{border-color:var(--blue);background:rgba(88,166,255,.12);transform:scale(1.1)}
+  .onboard-input{width:100%;margin-bottom:16px;padding:10px 14px;font-size:14px;border-radius:8px}
+  .onboard-btn{width:100%;padding:10px;font-size:14px;font-weight:600;border-radius:8px;background:linear-gradient(135deg,#238636,#2ea043);color:#fff;border:none;cursor:pointer;transition:.2s}
+  .onboard-btn:hover{opacity:.9;transform:translateY(-1px)}
+
+  /* ── Profile Avatar Button ─────────────────────────────────────────────── */
+  .profile-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);background:var(--bg3);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;position:relative;flex-shrink:0}
+  .profile-btn:hover{border-color:var(--blue);box-shadow:0 0 0 3px rgba(88,166,255,.15)}
+
+  /* ── Profile Panel ─────────────────────────────────────────────────────── */
+  .profile-panel{position:absolute;top:54px;right:20px;width:240px;background:var(--profile-glass);border:1px solid var(--profile-border);border-radius:12px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 16px 48px rgba(0,0,0,0.4);z-index:500;opacity:0;pointer-events:none;transform:translateY(-8px) scale(.97);transition:opacity .2s,transform .2s}
+  .profile-panel.open{opacity:1;pointer-events:all;transform:translateY(0) scale(1)}
+  .pp-header{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--border)}
+  .pp-avatar{font-size:28px;width:44px;height:44px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .pp-name{font-weight:600;font-size:14px;color:var(--text);word-break:break-word}
+  .pp-tag{font-size:10px;color:var(--muted);margin-top:2px}
+  .pp-section{padding:10px 14px;border-bottom:1px solid var(--border)}
+  .pp-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600}
+  .theme-toggle{display:flex;gap:6px}
+  .theme-btn{flex:1;padding:6px 0;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);cursor:pointer;transition:.15s;font-family:inherit;font-weight:500}
+  .theme-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+  body.light-theme .theme-btn.active{color:#fff}
+  .pp-exit{width:calc(100% - 28px);margin:10px 14px;padding:7px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;font-weight:500;transition:.15s;text-align:center}
+  .pp-exit:hover{background:var(--bg3);color:var(--text)}
+
+  /* ── Footer ───────────────────────────────────────────────────────────── */
+  .site-footer{margin-top:60px;padding:32px 20px 40px;border-top:1px solid var(--border);text-align:center}
+  .footer-inner{display:inline-flex;flex-direction:column;align-items:center;gap:10px}
+  .footer-row{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+  .footer-text{font-size:12px;color:var(--muted);letter-spacing:.4px}
+  .footer-text strong{color:var(--text);font-weight:600}
+  .footer-gh{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border:1px solid var(--border);border-radius:20px;background:var(--bg2);color:var(--text);text-decoration:none;font-size:12px;font-weight:500;transition:.2s}
+  .footer-gh:hover{border-color:var(--blue);color:var(--blue);background:var(--bg3);transform:translateY(-1px);box-shadow:0 4px 16px rgba(88,166,255,.12)}
+  .footer-gh svg{opacity:.8}
+
+  /* ── Rank sidebar card ─────────────────────────────────────────────────── */
+  .rank-ladder{padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+  .rank-tier{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);transition:.2s;position:relative;overflow:hidden}
+  .rank-tier::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+  .rank-tier.rookie::before{background:#3fb950}
+  .rank-tier.intermediate::before{background:#58a6ff}
+  .rank-tier.pro::before{background:#bc8cff}
+  .rank-tier.elite::before{background:linear-gradient(180deg,#f0883e,#bc8cff)}
+  .rank-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+  .rank-icon.rookie{background:rgba(63,185,80,.15);color:#3fb950}
+  .rank-icon.intermediate{background:rgba(88,166,255,.15);color:#58a6ff}
+  .rank-icon.pro{background:rgba(188,140,255,.15);color:#bc8cff}
+  .rank-icon.elite{background:rgba(240,136,62,.15);color:#f0883e}
+  .rank-info{flex:1}
+  .rank-name{font-size:12px;font-weight:600;color:var(--text)}
+  .rank-range{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:1px}
+  .skill-rank-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace;margin-left:6px;border:1px solid}
+  .srb-rookie{background:rgba(63,185,80,.1);color:#3fb950;border-color:rgba(63,185,80,.3)}
+  .srb-intermediate{background:rgba(88,166,255,.1);color:#58a6ff;border-color:rgba(88,166,255,.3)}
+  .srb-pro{background:rgba(188,140,255,.1);color:#bc8cff;border-color:rgba(188,140,255,.3)}
+  .srb-elite{background:rgba(240,136,62,.12);color:#f0883e;border-color:rgba(240,136,62,.3)}
+
+  /* ── Congrats Modal ────────────────────────────────────────────────────── */
+  .congrats-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+  .congrats-overlay.show{opacity:1;pointer-events:all}
+  .congrats-box{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:40px 36px;width:340px;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,0.6);transform:scale(.92);transition:transform .3s}
+  .congrats-overlay.show .congrats-box{transform:scale(1)}
+  .congrats-stripe{height:4px;border-radius:2px;margin:-40px -36px 32px;border-radius:14px 14px 0 0}
+  .congrats-stripe.rookie{background:#3fb950}
+  .congrats-stripe.intermediate{background:#58a6ff}
+  .congrats-stripe.pro{background:#bc8cff}
+  .congrats-stripe.elite{background:linear-gradient(90deg,#f0883e,#bc8cff)}
+  .congrats-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:600;color:var(--muted);margin-bottom:10px}
+  .congrats-rank{font-size:28px;font-weight:700;margin-bottom:8px}
+  .congrats-rank.rookie{color:#3fb950}
+  .congrats-rank.intermediate{color:#58a6ff}
+  .congrats-rank.pro{color:#bc8cff}
+  .congrats-rank.elite{background:linear-gradient(90deg,#f0883e,#bc8cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .congrats-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px}
+  .congrats-btn{padding:9px 28px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+  .congrats-btn:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+
+  @media(max-width:720px){.grid{grid-template-columns:1fr}.sidebar{order:2}}
+</style>
+</head>
+<body>
+
+<!-- ── Thank You / Logout Screen ─────────────────────────────────────────── -->
+<div class="onboard-overlay hidden" id="logoutOverlay">
+  <div class="onboard-box" style="max-width:320px">
+    <div style="font-size:48px;margin-bottom:14px">👋</div>
+    <div class="onboard-title">See you soon!</div>
+    <div class="onboard-sub" style="margin-bottom:0">Thanks for using <strong style="color:var(--text)">SkillTrack</strong>.<br/>Keep learning, keep growing.</div>
+  </div>
+</div>
+<!-- ── Congrats Modal ─────────────────────────────────────────────────────── -->
+<div class="congrats-overlay" id="congratsOverlay">
+  <div class="congrats-box">
+    <div class="congrats-stripe" id="congratsStripe"></div>
+    <div class="congrats-label">Rank Unlocked</div>
+    <div class="congrats-rank" id="congratsRank"></div>
+    <div class="congrats-sub" id="congratsSub"></div>
+    <button class="congrats-btn" onclick="closeCongratsModal()">Continue</button>
+  </div>
+</div>
+
+<div class="onboard-overlay hidden" id="onboardOverlay">
+  <div class="onboard-box">
+    <div style="font-size:36px;margin-bottom:10px">🎯</div>
+    <div class="onboard-title">Welcome to SkillTrack</div>
+    <div class="onboard-sub">Pick your avatar and enter your name to get started. This is a one-time setup!</div>
+    <div class="avatar-picker" id="avatarPicker">
+      <div class="avatar-opt sel" data-em="🦊">🦊</div>
+      <div class="avatar-opt" data-em="🐺">🐺</div>
+      <div class="avatar-opt" data-em="🦁">🦁</div>
+      <div class="avatar-opt" data-em="🐯">🐯</div>
+      <div class="avatar-opt" data-em="🐻">🐻</div>
+      <div class="avatar-opt" data-em="🦝">🦝</div>
+      <div class="avatar-opt" data-em="🐼">🐼</div>
+      <div class="avatar-opt" data-em="🦅">🦅</div>
+      <div class="avatar-opt" data-em="🦋">🦋</div>
+      <div class="avatar-opt" data-em="🐉">🐉</div>
+    </div>
+    <input class="onboard-input" id="onboardName" placeholder="Your name (e.g. Rohit)" maxlength="24"/>
+    <button class="onboard-btn" onclick="saveProfile()">Let's go →</button>
+  </div>
+</div>
+
+<header>
+  <div class="logo">
+    <!-- Minimal geometric AI logo -->
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lg1" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#58a6ff"/>
+          <stop offset="100%" stop-color="#bc8cff"/>
+        </linearGradient>
+        <linearGradient id="lg2" x1="28" y1="0" x2="0" y2="28" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#3fb950"/>
+          <stop offset="100%" stop-color="#58a6ff"/>
+        </linearGradient>
+      </defs>
+      <!-- Outer hexagon ring -->
+      <polygon points="14,2 24.4,8 24.4,20 14,26 3.6,20 3.6,8" fill="none" stroke="url(#lg1)" stroke-width="1.5" opacity="0.7"/>
+      <!-- Inner diamond -->
+      <polygon points="14,7 19,14 14,21 9,14" fill="none" stroke="url(#lg2)" stroke-width="1.2"/>
+      <!-- Center dot -->
+      <circle cx="14" cy="14" r="2.2" fill="url(#lg1)"/>
+      <!-- Corner accent dots -->
+      <circle cx="14" cy="2" r="1.2" fill="#58a6ff"/>
+      <circle cx="24.4" cy="20" r="1.2" fill="#bc8cff"/>
+      <circle cx="3.6" cy="8" r="1.2" fill="#3fb950"/>
+    </svg>
+    <span style="color:var(--text);font-weight:700;letter-spacing:-.3px">skill</span><span style="color:#58a6ff;font-weight:700">track</span>
+  </div>
+  <div class="header-right" style="position:relative">
+    <div class="profile-btn" id="profileBtn" onclick="toggleProfile()">
+      <span id="headerAvatar">👤</span>
+    </div>
+    <div class="profile-panel" id="profilePanel">
+      <div class="pp-header">
+        <div class="pp-avatar" id="ppAvatar">👤</div>
+        <div>
+          <div class="pp-name" id="ppName">—</div>
+          <div class="pp-tag">Skill Tracker</div>
+        </div>
+      </div>
+      <div class="pp-section">
+        <div class="pp-label">Theme</div>
+        <div class="theme-toggle">
+          <button class="theme-btn active" id="btnDark" onclick="setTheme('dark')">Dark</button>
+          <button class="theme-btn" id="btnLight" onclick="setTheme('light')">Light</button>
+        </div>
+      </div>
+      <button class="pp-exit" onclick="logOut()">Log Out</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="grid">
+    <div class="sidebar">
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Overview</div>
+        <div class="stat-row"><span class="stat-label">Skills tracked</span><span class="stat-val" id="statSkills">0</span></div>
+        <div class="stat-row"><span class="stat-label">Total XP earned</span><span class="stat-val" id="statXP">0</span></div>
+        <div class="stat-row"><span class="stat-label">Tasks logged</span><span class="stat-val" id="statTasks">0</span></div>
+        <div class="stat-row"><span class="stat-label">Max-leveled</span><span class="stat-val" id="statMaxed">0</span></div>
+        <div class="stat-row"><span class="stat-label">Current streak</span><span class="stat-val streak-fire" id="statStreak">0 🔥</span></div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Activity (last 15 days)</div>
+        <div class="contrib-grid">
+          <div class="contrib-label">Less ◼◼◼◼ More</div>
+          <div class="grid-cells" id="contribGrid"></div>
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Suggested Skills</div>
+        <div id="suggestions" style="padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Skill Ranks</div>
+        <div class="rank-ladder">
+          <div class="rank-tier rookie" id="tier-rookie">
+            <div class="rank-icon rookie">LV1</div>
+            <div class="rank-info">
+              <div class="rank-name">Rookie</div>
+              <div class="rank-range">Level 1 – 3</div>
+            </div>
+          </div>
+          <div class="rank-tier intermediate" id="tier-intermediate">
+            <div class="rank-icon intermediate">LV4</div>
+            <div class="rank-info">
+              <div class="rank-name">Intermediate</div>
+              <div class="rank-range">Level 4 – 6</div>
+            </div>
+          </div>
+          <div class="rank-tier pro" id="tier-pro">
+            <div class="rank-icon pro">LV7</div>
+            <div class="rank-info">
+              <div class="rank-name">Pro</div>
+              <div class="rank-range">Level 7 – 9</div>
+            </div>
+          </div>
+          <div class="rank-tier elite" id="tier-elite">
+            <div class="rank-icon elite">LV10</div>
+            <div class="rank-info">
+              <div class="rank-name">Elite</div>
+              <div class="rank-range">Level 10 — Max</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('skills')">Skills <span class="tab-count" id="skillCount">0</span></div>
+        <div class="tab" onclick="switchTab('log')">Daily Log <span class="tab-count" id="logCount">0</span></div>
+      </div>
+
+      <div class="skills-page active" id="skillsPage">
+        <div class="add-bar">
+          <input id="newSkillName" placeholder="Add a skill (e.g. DSA, Python...)" style="flex:1"/>
+          <select id="newSkillCat">
+            <option value="pre">Pre-college</option>
+            <option value="core">Core CSE</option>
+            <option value="personal">Personal</option>
+          </select>
+          <select id="newSkillIcon">
+            <option>CS</option><option>PY</option><option>DS</option><option>ML</option>
+            <option>WD</option><option>OS</option><option>DB</option><option>SE</option>
+            <option>AI</option><option>CN</option><option>LX</option><option>GT</option>
+          </select>
+          <button class="btn btn-primary" onclick="addSkill()">+ Add skill</button>
+        </div>
+        <div id="skillList"></div>
+        <div id="skillEmpty" class="empty-state" style="display:none">
+          <h3>No skills yet</h3>
+          <p>Add a skill above to start tracking your progress.<br/>Try starting with C Programming or DSA — great for CSE freshers.</p>
+        </div>
+      </div>
+
+      <div class="log-page" id="logPage">
+        <div id="logList"></div>
+        <div id="logEmpty" class="empty-state" style="display:none">
+          <h3>No logs yet</h3>
+          <p>Complete tasks on any skill to see your daily activity here.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-row">
+      <span class="footer-text">Crafted by <strong>Rohit</strong> &nbsp;·&nbsp; support me on</span>
+      <a class="footer-gh" href="https://github.com/rohityadav-RY" target="_blank" rel="noopener">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.74.5 12.02c0 5.1 3.29 9.42 7.86 10.95.57.1.78-.25.78-.55v-1.93c-3.2.7-3.87-1.54-3.87-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.34.95.1-.74.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .96-.31 3.16 1.18a10.96 10.96 0 0 1 2.88-.39c.98 0 1.96.13 2.88.39 2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.77.11 3.06.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.41-5.25 5.69.41.36.78 1.06.78 2.13v3.16c0 .3.2.66.79.55A10.53 10.53 0 0 0 23.5 12.02C23.5 5.74 18.27.5 12 .5z"/></svg>
+        Follow on GitHub
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="xp-toast" id="toast"></div>
+
+<script>
+// ── Profile & Onboarding ──────────────────────────────────────────────────
+const ANIMALS = ['🦊','🐺','🦁','🐯','🐻','🦝','🐼','🦅','🦋','🐉'];
+let selectedAvatar = '🦊';
+
+function initProfile(){
+  const name   = localStorage.getItem('st_name');
+  const avatar = localStorage.getItem('st_avatar');
+  if(name && avatar){
+    applyProfile(name, avatar);
+  } else {
+    document.getElementById('onboardOverlay').classList.remove('hidden');
+    // Avatar picker selection
+    document.querySelectorAll('.avatar-opt').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        document.querySelectorAll('.avatar-opt').forEach(x=>x.classList.remove('sel'));
+        el.classList.add('sel');
+        selectedAvatar = el.dataset.em;
+      });
+    });
+    // Allow Enter key
+    document.getElementById('onboardName').addEventListener('keydown', e=>{ if(e.key==='Enter') saveProfile(); });
+  }
+  // Restore theme
+  const theme = localStorage.getItem('st_theme')||'dark';
+  setTheme(theme, true);
+}
+
+function saveProfile(){
+  const name = document.getElementById('onboardName').value.trim();
+  if(!name){ document.getElementById('onboardName').focus(); return; }
+  localStorage.setItem('st_name', name);
+  localStorage.setItem('st_avatar', selectedAvatar);
+  document.getElementById('onboardOverlay').classList.add('hidden');
+  applyProfile(name, selectedAvatar);
+}
+
+function applyProfile(name, avatar){
+  document.getElementById('headerAvatar').textContent = avatar;
+  document.getElementById('ppAvatar').textContent     = avatar;
+  document.getElementById('ppName').textContent       = name;
+}
+
+// ── Profile Panel Toggle ──────────────────────────────────────────────────
+function toggleProfile(){
+  const panel = document.getElementById('profilePanel');
+  panel.classList.toggle('open');
+}
+document.addEventListener('click', e=>{
+  const btn   = document.getElementById('profileBtn');
+  const panel = document.getElementById('profilePanel');
+  if(!btn.contains(e.target) && !panel.contains(e.target)){
+    panel.classList.remove('open');
+  }
+});
+
+// ── Theme ─────────────────────────────────────────────────────────────────
+function setTheme(t, silent=false){
+  document.body.classList.toggle('light-theme', t==='light');
+  document.getElementById('btnDark').classList.toggle('active',  t==='dark');
+  document.getElementById('btnLight').classList.toggle('active', t==='light');
+  if(!silent) localStorage.setItem('st_theme', t);
+}
+
+// ── Log Out ───────────────────────────────────────────────────────────────
+function logOut(){
+  document.getElementById('profilePanel').classList.remove('open');
+  document.getElementById('logoutOverlay').classList.remove('hidden');
+}
+
+// ── State ──────────────────────────────────────────────────────────────────
+let skills = [];
+let logs = [];
+let expandedId = null;
+
+const CATEGORY_LABEL = {pre:'Pre-college',core:'Core CSE',personal:'Personal'};
+const CATEGORY_CLASS = {pre:'tag-pre',core:'tag-core',personal:'tag-personal'};
+
+const XP_PER_TASK = 50;
+function xpForLevel(lvl){ return 150; }
+function maxLevel(){ return 10; }
+
+// ── Rank System ───────────────────────────────────────────────────────────
+const RANKS = [
+  { key:'rookie',       name:'Rookie',       minLv:1,  maxLv:3,  cls:'srb-rookie',       msg:'You have taken your first steps. Keep at it and build the habit.' },
+  { key:'intermediate', name:'Intermediate', minLv:4,  maxLv:6,  cls:'srb-intermediate', msg:'Solid foundation. You are past the basics and growing fast.' },
+  { key:'pro',          name:'Pro',          minLv:7,  maxLv:9,  cls:'srb-pro',          msg:'Serious skill. You are in the top tier — keep pushing.' },
+  { key:'elite',        name:'Elite',        minLv:10, maxLv:10, cls:'srb-elite',        msg:'Maximum level reached. You have mastered this skill.' },
+];
+
+function getRank(level){
+  if(level >= 10) return RANKS[3];
+  if(level >= 7)  return RANKS[2];
+  if(level >= 4)  return RANKS[1];
+  if(level >= 1)  return RANKS[0];
+  return null;
+}
+
+function updateRankSidebar(){
+  // Rank card is a static reference only — no active highlighting
+}
+
+function showCongratsModal(rank){
+  const overlay = document.getElementById('congratsOverlay');
+  document.getElementById('congratsStripe').className = 'congrats-stripe ' + rank.key;
+  document.getElementById('congratsRank').className   = 'congrats-rank ' + rank.key;
+  document.getElementById('congratsRank').textContent = rank.name;
+  document.getElementById('congratsSub').textContent  = rank.msg;
+  overlay.classList.add('show');
+}
+
+function closeCongratsModal(){
+  document.getElementById('congratsOverlay').classList.remove('show');
+}
+
+const SUGGESTIONS = ['Python','C++','Music','Dance','Spanish','Japanese','Photography','Sketching','Chess','Public Speaking','Video Editing','Machine Learning','Yoga','Creative Writing','Guitar'];
+
+// ── Persistence ─────────────────────────────────────────────────────────────
+function save(){
+  try{
+    localStorage.setItem('cse_skills', JSON.stringify(skills));
+    localStorage.setItem('cse_logs', JSON.stringify(logs));
+  }catch(e){}
+}
+function load(){
+  try{
+    skills = JSON.parse(localStorage.getItem('cse_skills')||'[]');
+    logs   = JSON.parse(localStorage.getItem('cse_logs')||'[]');
+  }catch(e){ skills=[]; logs=[]; }
+}
+
+// ── Countdown ───────────────────────────────────────────────────────────────
+function updateCountdown(){}
+
+// ── Tab ─────────────────────────────────────────────────────────────────────
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active', (i===0&&t==='skills')||(i===1&&t==='log')));
+  document.getElementById('skillsPage').classList.toggle('active', t==='skills');
+  document.getElementById('logPage').classList.toggle('active', t==='log');
+  if(t==='log') renderLog();
+}
+
+// ── Add Skill ────────────────────────────────────────────────────────────────
+function addSkill(){
+  const name = document.getElementById('newSkillName').value.trim();
+  if(!name) return;
+  const cat  = document.getElementById('newSkillCat').value;
+  const icon = document.getElementById('newSkillIcon').value;
+  skills.push({id: Date.now(), name, cat, icon, level:0, xp:0, totalXP:0});
+  document.getElementById('newSkillName').value='';
+  save(); renderSkills(); updateStats();
+}
+
+// ── Add Task ─────────────────────────────────────────────────────────────────
+function addTask(id){
+  const inp = document.getElementById('task-'+id);
+  const text = inp.value.trim();
+  if(!text) return;
+  const skill = skills.find(s=>s.id===id);
+  if(!skill) return;
+
+  const wasLevel = skill.level;
+  const wasRank  = getRank(wasLevel);
+  skill.xp += XP_PER_TASK;
+  skill.totalXP += XP_PER_TASK;
+
+  // Level up
+  while(skill.level < maxLevel() && skill.xp >= xpForLevel(skill.level+1)){
+    skill.xp -= xpForLevel(skill.level+1);
+    skill.level++;
+  }
+  if(skill.level >= maxLevel()){ skill.level = maxLevel(); skill.xp = 0; }
+
+  const leveled  = skill.level > wasLevel;
+  const newRank  = getRank(skill.level);
+  const rankUp   = leveled && newRank && (!wasRank || newRank.key !== wasRank.key);
+
+  logs.push({
+    id: Date.now(),
+    skillId: id,
+    skillName: skill.name,
+    skillIcon: skill.icon,
+    text,
+    date: new Date().toISOString(),
+    xp: XP_PER_TASK
+  });
+
+  inp.value='';
+  save(); renderSkills(); updateStats();
+  updateContrib(); updateRankSidebar();
+
+  if(rankUp){
+    showCongratsModal(newRank);
+  } else if(leveled){
+    showToast(`${skill.name} reached Level ${skill.level}!`, true);
+  } else {
+    showToast(`+${XP_PER_TASK} XP — ${skill.name}`);
+  }
+}
+
+// ── Delete Skill ─────────────────────────────────────────────────────────────
+function deleteSkill(id){
+  skills = skills.filter(s=>s.id!==id);
+  logs   = logs.filter(l=>l.skillId!==id);
+  if(expandedId===id) expandedId=null;
+  save(); renderSkills(); updateStats(); updateContrib();
+}
+
+// ── Toggle expand ────────────────────────────────────────────────────────────
+function toggleSkill(id){
+  expandedId = expandedId===id ? null : id;
+  renderSkills();
+}
+
+// ── Render Skills ────────────────────────────────────────────────────────────
+function renderSkills(){
+  const list = document.getElementById('skillList');
+  const empty = document.getElementById('skillEmpty');
+  document.getElementById('skillCount').textContent = skills.length;
+
+  if(!skills.length){ list.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  list.innerHTML = skills.map(s=>{
+    const maxed = s.level >= maxLevel();
+    const needed = maxed ? xpForLevel(maxLevel()) : xpForLevel(s.level+1);
+    const pct = maxed ? 100 : Math.min(100, Math.round((s.xp/needed)*100));
+    const barColor = maxed ? '' : s.level>=7 ? '#bc8cff' : s.level>=4 ? '#58a6ff' : '#3fb950';
+    const open = expandedId===s.id;
+    const skillLogs = logs.filter(l=>l.skillId===s.id).slice().reverse();
+
+    const rank   = getRank(s.level);
+    const rankBadge = rank ? `<span class="skill-rank-badge ${rank.cls}">${rank.name}</span>` : '';
+
+    return `
+    <div class="skill-card${maxed?' maxed':''}" id="card-${s.id}">
+      <div class="skill-header" onclick="toggleSkill(${s.id})">
+        <div class="skill-icon">${s.icon}</div>
+        <div class="skill-meta">
+          <div class="skill-name">${s.name} <span class="tag ${CATEGORY_CLASS[s.cat]}">${CATEGORY_LABEL[s.cat]}</span>${rankBadge}</div>
+          <div class="skill-sublabel">${maxed ? 'Max Level reached' : `${pct}% to next level`}</div>
+        </div>
+        <span class="level-badge">${maxed?'MAX':'Lv '+s.level}</span>
+        <span class="xp-label">${s.xp}/${maxed?'—':needed} xp</span>
+        <span class="chevron${open?' open':''}">▶</span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bg"><div class="progress-fill" style="width:${pct}%;background:${maxed?'':barColor}"></div></div>
+        <div class="progress-meta"><span>Lv ${s.level}</span><span>Total XP: ${s.totalXP}</span><span>Lv ${Math.min(s.level+1,maxLevel())}</span></div>
+      </div>
+      <div class="skill-body${open?' open':''}" id="body-${s.id}">
+        <div class="log-area">
+          <div class="log-form">
+            <input id="task-${s.id}" placeholder="What did you work on today?" onkeydown="if(event.key==='Enter') addTask(${s.id})"/>
+            <button class="btn btn-primary btn-sm" onclick="addTask(${s.id})">Log +${XP_PER_TASK}xp</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSkill(${s.id})">Delete</button>
+          </div>
+          <div class="log-entries">
+            ${skillLogs.length ? skillLogs.slice(0,10).map(l=>`
+              <div class="log-entry">
+                <span class="log-entry-text">${l.text}</span>
+                <span class="log-entry-meta">${formatDate(l.date)} · +${l.xp}xp</span>
+              </div>`).join('') : '<div class="log-empty">No tasks logged yet. Start by logging what you studied!</div>'}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render Log ───────────────────────────────────────────────────────────────
+function renderLog(){
+  const list = document.getElementById('logList');
+  const empty = document.getElementById('logEmpty');
+  document.getElementById('logCount').textContent = logs.length;
+
+  if(!logs.length){ list.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  const groups = {};
+  [...logs].reverse().forEach(l=>{
+    const d = new Date(l.date).toDateString();
+    if(!groups[d]) groups[d]=[];
+    groups[d].push(l);
+  });
+
+  list.innerHTML = Object.entries(groups).map(([date,entries])=>`
+    <div class="day-group">
+      <div class="day-group-header">${date}</div>
+      ${entries.map(l=>`
+        <div class="day-entry-row">
+          <div class="day-skill-icon">${l.skillIcon}</div>
+          <div class="day-entry-info">
+            <div class="day-entry-title">${l.text}</div>
+            <div class="day-entry-sub">${l.skillName}</div>
+          </div>
+          <div class="day-xp">+${l.xp} xp</div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function updateStats(){
+  document.getElementById('statSkills').textContent  = skills.length;
+  document.getElementById('statXP').textContent      = skills.reduce((a,s)=>a+s.totalXP,0);
+  document.getElementById('statTasks').textContent   = logs.length;
+  document.getElementById('statMaxed').textContent   = skills.filter(s=>s.level>=maxLevel()).length;
+  document.getElementById('statStreak').textContent  = calcStreak() + (calcStreak()>0?' ↑':'');
+}
+
+function calcStreak(){
+  const days = [...new Set(logs.map(l=>new Date(l.date).toDateString()))].map(d=>new Date(d)).sort((a,b)=>b-a);
+  if(!days.length) return 0;
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now()-86400000).toDateString();
+  if(days[0].toDateString()!==today && days[0].toDateString()!==yesterday) return 0;
+  let streak=1;
+  for(let i=1;i<days.length;i++){
+    const diff = (days[i-1]-days[i])/(1000*60*60*24);
+    if(Math.round(diff)===1) streak++;
+    else break;
+  }
+  return streak;
+}
+
+// ── Contrib grid ──────────────────────────────────────────────────────────────
+function updateContrib(){
+  const grid = document.getElementById('contribGrid');
+  const counts = {};
+  logs.forEach(l=>{
+    const d = new Date(l.date).toDateString();
+    counts[d] = (counts[d]||0)+1;
+  });
+  let html='';
+  for(let i=14;i>=0;i--){
+    const d = new Date(Date.now()-i*86400000).toDateString();
+    const c = counts[d]||0;
+    const cls = c===0?'':c<=1?'l1':c<=2?'l2':c<=3?'l3':'l4';
+    html+=`<div class="cell ${cls}" title="${d}: ${c} task(s)"></div>`;
+  }
+  grid.innerHTML=html;
+}
+
+// ── Suggestions ───────────────────────────────────────────────────────────────
+function renderSuggestions(){
+  const el = document.getElementById('suggestions');
+  el.innerHTML = SUGGESTIONS.filter(s=>!skills.find(sk=>sk.name.toLowerCase()===s.toLowerCase())).slice(0,6).map(s=>`
+    <div style="font-size:12px;color:var(--blue);cursor:pointer;padding:3px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg3)" onclick="quickAdd('${s}')">${s}</div>`).join('');
+}
+
+function quickAdd(name){
+  document.getElementById('newSkillName').value = name;
+  addSkill();
+  renderSuggestions();
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, lvlup=false){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'xp-toast show' + (lvlup?' lvlup-toast':'');
+  clearTimeout(t._to);
+  t._to = setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function formatDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN',{month:'short',day:'numeric'}) + ' ' + d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+initProfile();
+load();
+updateCountdown();
+renderSkills();
+updateStats();
+updateContrib();
+renderSuggestions();
+updateRankSidebar();
+</script>
+</body>
+</html>
